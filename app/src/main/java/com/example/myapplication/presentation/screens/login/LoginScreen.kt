@@ -30,80 +30,125 @@ import com.example.myapplication.ui.theme.CardWhite
 import com.example.myapplication.ui.theme.LightGray
 import com.example.myapplication.ui.theme.TextPrimary
 import com.example.myapplication.ui.theme.TextSecondary
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.myapplication.presentation.screens.login.LoginViewModel
+import androidx.compose.runtime.LaunchedEffect
+import com.example.myapplication.data.Response
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+
 
 @Composable
 fun LoginScreen(
     modifier: Modifier = Modifier,
     navigateToStudentDashboard: () -> Unit = {},
+    navigateToLecturerDashboard: () -> Unit = {},
+    navigateToSignUpScreen: () -> Unit = {},
+    vm: LoginViewModel = viewModel(),
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(LightGray)
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(28.dp),
-            colors = CardDefaults.cardColors(containerColor = CardWhite),
-            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    LaunchedEffect(Unit) {
+        vm.uiEvents.collect { message ->
+            snackbarHostState.showSnackbar(message)
+        }
+    }
+    if (vm.loginResponse is Response.Success && vm.userRole != null) {
+        LaunchedEffect(vm.loginResponse, vm.userRole) {
+            when (vm.userRole) {
+                "STUDENT" -> navigateToStudentDashboard()
+                "LECTURER" -> navigateToLecturerDashboard()
+            }
+        }
+    }
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(hostState = snackbarHostState)
+        }
+    ) { innerPadding ->
+
+        Box(
+            modifier = modifier
+                .padding(innerPadding)
+                .fillMaxSize()
+                .background(LightGray)
+                .padding(24.dp),
+            contentAlignment = Alignment.Center
         ) {
-            Column(
-                modifier =  Modifier.padding(24.dp),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                colors = CardDefaults.cardColors(containerColor = CardWhite),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Text(
-                    text = "StudyTracker",
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimary
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                Text(
-                    text = "Track your module tasks easily",
-                    fontSize = 16.sp,
-                    color = TextSecondary
-                )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                CustomTextField(
-                    hintText = "Email",
-                    text = email,
-                    onValueChange = { email = it }
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                CustomTextField(
-                    hintText = "Password",
-                    text = password,
-                    onValueChange = { password = it },
-                    isPasswordField = true
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                CustomButton(
-                    text = "Login",
-                    clickButton = navigateToStudentDashboard,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Spacer(modifier = Modifier.height(8.dp))
-
-                TextButton(onClick = {}) {
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
-                        text = "Don't have an account? Sign up",
+                        text = "StudyTracker",
+                        fontSize = 32.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Text(
+                        text = "Track your module tasks easily",
+                        fontSize = 16.sp,
                         color = TextSecondary
                     )
+
+                    Spacer(modifier = Modifier.height(32.dp))
+
+                    CustomTextField(
+                        hintText = "Email",
+                        text = vm.loginUiState.email,
+                        onValueChange = {
+                            vm.onChange(email = it)
+                        },
+                        errorMessage = "Please enter a valid email",
+                        errorPresent = vm.loginUiState.emailIsInvalid(),
+                        contentDescription = "Email Login"
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    CustomTextField(
+                        hintText = "Password",
+                        text = vm.loginUiState.password,
+                        onValueChange = {
+                            vm.onChange(password = it)
+                        },
+                        isPasswordField = true,
+                        errorMessage = "Password must be at least 6 characters",
+                        errorPresent = vm.loginUiState.passwordIsInvalid(),
+                        contentDescription = "Password Login"
+                    )
+
+                    Spacer(modifier = Modifier.height(28.dp))
+
+                    CustomButton(
+                        text = "Login",
+                        clickButton = {
+                            vm.login()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = vm.isFormValid()
+                    )
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    TextButton(onClick = { navigateToSignUpScreen() }) {
+                        Text(
+                            text = "Don't have an account? Sign up",
+                            color = TextSecondary,
+
+                            )
+                    }
                 }
             }
         }

@@ -13,7 +13,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.ui.theme.ErrorRed
-
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 @Composable
 fun CustomTextField(
     hintText: String,
@@ -22,7 +23,8 @@ fun CustomTextField(
     modifier: Modifier = Modifier,
     isPasswordField: Boolean = false,
     errorMessage: String = "",
-    errorPresent: Boolean = false
+    errorPresent: Boolean = false,
+    contentDescription: String,
 ) {
     Column(modifier = modifier) {
         OutlinedTextField(
@@ -40,7 +42,11 @@ fun CustomTextField(
                 keyboardType = if (isPasswordField) KeyboardType.Password else KeyboardType.Text
             ),
             shape = RoundedCornerShape(14.dp),
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    this.contentDescription = contentDescription
+                }
         )
 
         if (errorPresent) {

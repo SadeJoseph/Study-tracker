@@ -23,8 +23,8 @@ fun BottomNavBar(
 
     val items = listOf(
         BottomNavItem("Home", Icons.Default.Home, NavScreen.StudentDashboard.route),
-        BottomNavItem("Tasks", Icons.Default.List, "tasks"),
-        BottomNavItem("Profile", Icons.Default.Person, "profile")
+        BottomNavItem("Tasks", Icons.Default.List, NavScreen.Tasks.route),
+        BottomNavItem("Profile", Icons.Default.Person, NavScreen.StudentProfile.route)
     )
 
     NavigationBar {

@@ -1,6 +1,7 @@
 package com.example.myapplication.presentation.screens.student
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -28,11 +29,20 @@ import com.example.myapplication.ui.theme.WarningOrange
 import androidx.navigation.NavController
 import androidx.compose.material3.Scaffold
 import com.example.myapplication.presentation.components.BottomNavBar
-
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import com.example.myapplication.navigation.NavScreen
+import androidx.compose.foundation.clickable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.lifecycle.viewmodel.compose.viewModel
 @Composable
 fun StudentDashboardScreen(
-    navController: NavController
+    navController: NavController,
+    vm: StudentDashboardViewModel = viewModel()
 ) {
+    LaunchedEffect(Unit) {
+        vm.loadDashboard()
+    }
     Scaffold(
         bottomBar = {
             BottomNavBar(navController)
@@ -45,6 +55,7 @@ fun StudentDashboardScreen(
                 .fillMaxSize()
                 .background(LightGray)
                 .padding(20.dp)
+                .verticalScroll(rememberScrollState())
         ) {
             Text(
                 text = "Dashboard",
@@ -67,26 +78,28 @@ fun StudentDashboardScreen(
             ) {
                 SummaryCard(
                     title = "Completed",
-                    value = "1",
+                    value = vm.completedCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
 
                 SummaryCard(
                     title = "In Progress",
-                    value = "1",
+                    value = vm.inProgressCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
 
                 SummaryCard(
                     title = "Not Started",
-                    value = "2",
+                    value = vm.notStartedCount.toString(),
                     modifier = Modifier.weight(1f)
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            ProgressCard()
+            ProgressCard(
+                progressPercent = vm.progressPercent
+            )
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -98,25 +111,40 @@ fun StudentDashboardScreen(
             )
 
             Spacer(modifier = Modifier.height(12.dp))
+            //no tasks
 
-            DashboardTaskCard(
-                title = "Data Structures Assignment",
-                module = "Computer Science 101",
-                dueDate = "Due May 15",
-                status = "In Progress"
-            )
+            if (vm.tasks.isEmpty()) {
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = "No upcoming tasks",
+                    color = TextSecondary
+                )
 
-            DashboardTaskCard(
-                title = "Database Design Project",
-                module = "Database Systems",
-                dueDate = "Due May 20",
-                status = "Not Started"
-            )
+            } else {
+
+// take only 2 tasks for dashboard and 2 nearest todays date
+                vm.tasks
+                    .sortedBy { task ->
+                        java.time.LocalDate.parse(
+                            task.deadline,
+                            java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
+                        )
+                    }
+                    .take(2).forEach { task ->
+                        DashboardTaskCard(
+                            title = task.title,
+                            module = task.moduleCode,
+                            dueDate = task.deadline,
+                            status = vm.taskStatuses[task.id] ?: "NOT_STARTED",
+                            onClick = {
+                                navController.navigate(NavScreen.TaskDetail.createRoute(task.id))
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+            }
         }
-    }
-}
+    }}
 @Composable
 fun SummaryCard(
     title: String,
@@ -151,7 +179,9 @@ fun SummaryCard(
 }
 
 @Composable
-fun ProgressCard() {
+fun ProgressCard(
+    progressPercent: Int
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -172,7 +202,7 @@ fun ProgressCard() {
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = "25%",
+                text = "${progressPercent}%",
                 fontSize = 28.sp,
                 fontWeight = FontWeight.Bold,
                 color = CardWhite
@@ -186,16 +216,17 @@ fun DashboardTaskCard(
     title: String,
     module: String,
     dueDate: String,
-    status: String
+    status: String,
+    onClick: () -> Unit = {}
 ) {
     val statusColor = when (status) {
-        "Complete" -> SuccessGreen
-        "In Progress" -> WarningOrange
+        "COMPLETED" -> SuccessGreen
+        "IN_PROGRESS" -> WarningOrange
         else -> TextSecondary
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth() .clickable{ onClick()},
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -229,7 +260,11 @@ fun DashboardTaskCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             Text(
-                text = status,
+                text = when (status) {
+                    "COMPLETED" -> "Completed"
+                    "IN_PROGRESS" -> "In Progress"
+                    else -> "Not Started"
+                },
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = statusColor

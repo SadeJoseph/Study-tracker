@@ -11,24 +11,35 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.myapplication.ui.theme.CardWhite
 import com.example.myapplication.ui.theme.LightBlue
-
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 @Composable
 fun CustomButton(
     text: String,
     clickButton: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    containerColor: Color = LightBlue,
+    contentColor: Color = CardWhite,
 ) {
+
     Button(
         onClick = clickButton,
-        modifier = modifier,
+        // for tests
+        modifier = modifier.semantics {
+            contentDescription = "$text button"
+        },
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
-            containerColor = LightBlue,
-            contentColor = CardWhite
+            containerColor = containerColor,
+            contentColor = contentColor
         )
     ) {
-        Text(text = text)
+
+        Text(
+            text = text
+        )
     }
 }
